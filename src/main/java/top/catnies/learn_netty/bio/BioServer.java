@@ -8,7 +8,7 @@ import java.net.Socket;
 public class BioServer {
 
     public static void main(String[] args) throws IOException {
-        ServerSocket serverSocket = new ServerSocket(2580);     // 创建一个服务器socket, 监听端口 2580;
+        ServerSocket serverSocket = new ServerSocket(8987);     // 创建一个服务器socket, 监听端口 2580;
         System.out.println("Server started, waiting...");
 
         while (true) {

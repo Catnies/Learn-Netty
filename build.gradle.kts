@@ -21,4 +21,5 @@ dependencies {
     // 开发工具
     compileOnly("org.projectlombok:lombok:1.18.34") // Lombok
     annotationProcessor("org.projectlombok:lombok:1.18.34") // Lombok
+    compileOnly("io.netty:netty-all:4.1.119.Final")  // Netty
 }
