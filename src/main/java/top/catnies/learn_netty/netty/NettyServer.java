@@ -5,6 +5,7 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 
@@ -21,6 +22,7 @@ public class NettyServer {
                 ChannelPipeline pipeline = socketChannel.pipeline(); // 获取管道
 
                 // 入站处理器
+                pipeline.addLast(new LineBasedFrameDecoder(1024)); // 按行切分，最多 1024 字节.
                 pipeline.addLast(new StringDecoder()); // Buffer解码成字符串
                 pipeline.addLast(new StatusHandler()); // 自定义状态处理器
                 pipeline.addLast(new PrintHandler());  // 自定义打印解码处理器
@@ -54,7 +56,7 @@ public class NettyServer {
     static class ResponseHandler extends SimpleChannelInboundHandler<String> {
         @Override
         protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
-            ctx.channel().writeAndFlush("回复消息 -> " + msg);
+            ctx.channel().writeAndFlush("回复消息 -> " + msg + "\n");
         }
 
 

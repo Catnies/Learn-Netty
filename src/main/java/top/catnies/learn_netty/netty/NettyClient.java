@@ -5,6 +5,7 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 
@@ -25,6 +26,7 @@ public class NettyClient {
                 pipeline.addLast(new StringEncoder()); // 字符串编码成Buffer
 
                 // 入站处理器
+                pipeline.addLast(new LineBasedFrameDecoder(1024)); // 按行切分，最多 1024 字节.
                 pipeline.addLast(new StringDecoder()); // Buffer解码成字符串
                 pipeline.addLast(new PrintHandler());   // 自定义打印解码处理器
 
@@ -38,7 +40,7 @@ public class NettyClient {
                 System.out.println("客户端成功链接了 8987 端口.");
                 EventLoop eventLoop = connectFuture.channel().eventLoop();  // 获取channel的eventloop, 因为客户端和服务端是1对1的
                 eventLoop.scheduleAtFixedRate(() -> {   // 每隔一秒定时向服务端发送消息
-                    connectFuture.channel().writeAndFlush("hello server! at " + System.currentTimeMillis());
+                    connectFuture.channel().writeAndFlush("hello server! at " + System.currentTimeMillis() + "\n");
                 }, 0, 1, TimeUnit.SECONDS);
             }
         });
