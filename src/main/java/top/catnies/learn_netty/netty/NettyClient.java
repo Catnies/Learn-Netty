@@ -12,6 +12,7 @@ import io.netty.handler.codec.string.StringEncoder;
 import java.util.concurrent.TimeUnit;
 
 public class NettyClient {
+
     public static void main(String[] args) {
         Bootstrap bootstrap = new Bootstrap();  // 创建客户端的 Bootstrap
         NioEventLoopGroup group = new NioEventLoopGroup();
@@ -29,7 +30,6 @@ public class NettyClient {
                 pipeline.addLast(new LineBasedFrameDecoder(1024)); // 按行切分，最多 1024 字节.
                 pipeline.addLast(new StringDecoder()); // Buffer解码成字符串
                 pipeline.addLast(new PrintHandler());   // 自定义打印解码处理器
-
             }
         });
 
@@ -42,16 +42,15 @@ public class NettyClient {
                 eventLoop.scheduleAtFixedRate(() -> {   // 每隔一秒定时向服务端发送消息
                     connectFuture.channel().writeAndFlush("hello server! at " + System.currentTimeMillis() + "\n");
                 }, 0, 1, TimeUnit.SECONDS);
-            }
+            } else { System.out.println("客户端链接失败, 请检查服务端是否在线!"); }
         });
     }
-
 
 
     static class PrintHandler extends SimpleChannelInboundHandler<String> {
         @Override
         protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
-            System.out.println("收到来自服务器: " + ctx.channel().remoteAddress() + " 的消息, 内容是: " + msg);
+            System.out.println("[日志] 收到来自服务器: " + ctx.channel().remoteAddress() + " 的消息, 内容是: " + msg + "\n");
         }
     }
 }

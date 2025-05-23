@@ -10,6 +10,7 @@ import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 
 public class NettyServer {
+
     public static void main(String[] args) {
         ServerBootstrap serverBootstrap = new ServerBootstrap(); // 创建服务器的 Bootstrap .
         EventLoopGroup bossGroup = new NioEventLoopGroup(); // 第一个是 bossGroup，用于接收连接；
@@ -24,16 +25,13 @@ public class NettyServer {
                 // 入站处理器
                 pipeline.addLast(new LineBasedFrameDecoder(1024)); // 按行切分，最多 1024 字节.
                 pipeline.addLast(new StringDecoder()); // Buffer解码成字符串
-                pipeline.addLast(new StatusHandler()); // 自定义状态处理器
-                pipeline.addLast(new PrintHandler());  // 自定义打印解码处理器
+                pipeline.addLast(new StatusHandler()); // 自定义状态处理器(日志)
                 pipeline.addLast(new ResponseHandler()); // 自定义回复消息
 
                 // 出站处理器
                 pipeline.addLast(new StringEncoder()); // 字符串编码成Buffer
-
             }
         });
-
 
         ChannelFuture bindFuture = serverBootstrap.bind(8987); // 让Bootstrap监听端口, 返回的是一个future
         bindFuture.addListener( future -> {     // 可以通过添加监听器, 来检查监听端口是否成功和失败, 然后执行相关的操作.
@@ -43,28 +41,10 @@ public class NettyServer {
     }
 
 
-    static class PrintHandler extends SimpleChannelInboundHandler<String> {
-        @Override
-        protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
-            System.out.println("收到来自客户端: " + ctx.channel().remoteAddress() + " 的消息, 内容是: " + msg);
-            // SimpleChannelInboundHandler 会在 channelRead0 完成后自动释放 ByteBuf，所以这里要用 fireChannelRead 手动向下传递
-            ctx.fireChannelRead(msg); // 如果需要把消息继续往下处理, 则需要手动显示传递.
-        }
-    }
-
-
-    static class ResponseHandler extends SimpleChannelInboundHandler<String> {
-        @Override
-        protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
-            ctx.channel().writeAndFlush("回复消息 -> " + msg + "\n");
-        }
-
-
-    }
-
     static class StatusHandler extends SimpleChannelInboundHandler<String> {
         @Override
         protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
+            System.out.println("[日志] 收到来自客户端: " + ctx.channel().remoteAddress() + " 的消息, 内容是: " + msg);
             ctx.fireChannelRead(msg); // 直接传递给下一层处理
         }
 
@@ -91,9 +71,18 @@ public class NettyServer {
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
             System.out.println(ctx.channel() + " 出现了异常");
-            cause.printStackTrace(); // 打印堆栈，有助于调试
+            cause.printStackTrace();
         }
     }
+
+
+    static class ResponseHandler extends SimpleChannelInboundHandler<String> {
+        @Override
+        protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
+            ctx.channel().writeAndFlush("回复消息 -> " + msg + "\n");
+        }
+    }
+
 }
 
 
