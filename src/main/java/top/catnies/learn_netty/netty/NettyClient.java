@@ -55,7 +55,13 @@ public class NettyClient {
                             System.out.println("<< 请输入要发送给服务端的内容：");
                             String text = scanner.nextLine();
                             if (text.isEmpty()) continue;
-                            connectFuture.channel().writeAndFlush(text);
+                            if ("quit".equals(text)) {
+                                group.shutdownGracefully();
+                                ChannelFuture future = connectFuture.channel().close();
+                                future.sync();
+                                break;
+                            }
+                            else connectFuture.channel().writeAndFlush(text);
                         }
                     } catch (Exception e) {
                         e.printStackTrace();

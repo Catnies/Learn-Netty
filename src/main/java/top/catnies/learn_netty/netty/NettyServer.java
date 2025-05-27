@@ -21,13 +21,13 @@ public class NettyServer {
                     protected void initChannel(SocketChannel socketChannel) throws Exception {
                         socketChannel.pipeline()
                                 // 入站处理器
-                                .addLast(new NettyClient.MyLengthDecoder()) // 入站之后, 用处理器检查当前的消息是否完整
-                                .addLast(new StringDecoder())       // Buffer解码成字符串
-                                .addLast(new StatusHandler())       // 自定义状态处理器(日志)
-                                .addLast(new ResponseHandler())    // 自定义回复消息
+                                .addLast("msg_decoder", new NettyClient.MyLengthDecoder()) // 入站之后, 用处理器检查当前的消息是否完整
+                                .addLast("string_decoder", new StringDecoder())       // Buffer解码成字符串
+                                .addLast("log_print",new LogPrintHandler())       // 自定义状态处理器(日志)
+                                .addLast("response_handler", new ResponseHandler())    // 自定义回复消息
 
                                 // 出站处理器
-                                .addLast(new NettyClient.MyLengthEncoder()); // 将字符串添加长度信息
+                                .addLast("msg_encoder", new NettyClient.MyLengthEncoder()); // 将字符串添加长度信息
                     }
                 })
                     // 当客户端发起连接请求时，如果服务器还没有来得及 accept 这个连接，这个连接就会被暂存在 backlog 队列中。
@@ -38,7 +38,41 @@ public class NettyServer {
 
             ChannelFuture bindFuture = serverBootstrap.bind(8987); // 让Bootstrap监听端口, 返回的是一个future
             bindFuture.addListener( future -> {     // 可以通过添加监听器, 来检查监听端口是否成功和失败, 然后执行相关的操作.
-                if (bindFuture.isSuccess()) System.out.println("服务端监听端口 8987 成功!");
+                if (bindFuture.isSuccess()) {
+                    System.out.println("服务端监听端口 8987 成功!");
+                    Channel serverChannel = bindFuture.channel();
+
+
+                    serverChannel.pipeline().addFirst("try", new ChannelInboundHandlerAdapter() {
+
+                        @Override
+                        public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+                            super.channelRead(ctx, msg); // 必须得先初始化其他的
+                            Channel clientChannel = (Channel) msg;
+                            clientChannel.pipeline().addLast(new ChannelInitializer<Channel>() {
+                                @Override
+                                protected void initChannel(Channel ch) throws Exception {
+                                    System.out.println("未注入前的Pipeline: " +  String.join(", ", ch.pipeline().names()));
+                                    ch.pipeline().addBefore("log_print", "change_handler", new LogPrintHandler());
+                                    System.out.println("注入完成的Pipeline: " +  String.join(", ", ch.pipeline().names()));
+                                }
+                            });
+
+//                            System.out.println("处理super, 先让后面的init初始化.");
+//                            super.channelRead(ctx, msg);
+//                            Thread.sleep(1000);
+//                            if (msg instanceof Channel clientChannel) {
+//                                System.out.println("未注入前的pipeline: " + clientChannel.pipeline());
+//                                System.out.println("开始注入handler.");
+//                                clientChannel.pipeline().addAfter("string_decoder", "change_handler", new ChangeHandler());
+//                                System.out.println("成功添加了新的handler.");
+//                                System.out.println("注入完成的pipeline: " + clientChannel.pipeline());
+//                            }
+                        }
+
+                    });
+
+                }
                 else System.out.println("服务器监听端口失败, 请检查端口是否已经被占用!");
             });
 
@@ -52,7 +86,7 @@ public class NettyServer {
     }
 
 
-    static class StatusHandler extends SimpleChannelInboundHandler<String> {
+    static class LogPrintHandler extends SimpleChannelInboundHandler<String> {
         @Override
         protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
             System.out.println("[日志] 收到来自客户端: " + ctx.channel().remoteAddress() + " 的消息, 内容是: " + msg);
@@ -91,6 +125,14 @@ public class NettyServer {
         @Override
         protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
             if (!msg.startsWith("bt:")) ctx.channel().writeAndFlush("re: " + msg);
+        }
+    }
+
+    static class ChangeHandler extends ChannelInboundHandlerAdapter {
+        @Override
+        public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+            System.out.println("注入的handler触发了!");
+            super.channelRead(ctx, msg);
         }
     }
 

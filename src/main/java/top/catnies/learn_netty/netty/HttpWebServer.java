@@ -32,9 +32,12 @@ public class HttpWebServer {
                         @Override
                         protected void initChannel(SocketChannel ch) {
                             ch.pipeline()
+                                    // 入站
                                     .addLast("decoder", new HttpRequestDecoder())
-                                    .addLast("encoder", new HttpResponseEncoder())
-                                    .addLast("handler", new HttpServerHandler());
+                                    .addLast("handler", new HttpServerHandler())
+
+                                    // 出站
+                                    .addLast("encoder", new HttpResponseEncoder());
                         }
                     })
                     .option(ChannelOption.SO_BACKLOG, 128)
@@ -79,6 +82,7 @@ public class HttpWebServer {
                         .addListener(ChannelFutureListener.CLOSE); // 当任务完成之后, 执行CLOSE任务.
             }
         }
+
 
         private String createHtmlContent() {
             return "<!DOCTYPE html>\n" +

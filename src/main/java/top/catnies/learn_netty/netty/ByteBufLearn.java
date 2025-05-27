@@ -7,7 +7,7 @@ import java.util.Arrays;
 
 public class ByteBufLearn {
     public static void main(String[] args) {
-        ByteBuf buf = Unpooled.buffer(128);
+        ByteBuf buf = Unpooled.buffer(24);
         System.out.println("初始状态：" + Arrays.toString(buf.array()));
 
         buf.writeInt(66); // 写入一个Int数据.
